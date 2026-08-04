@@ -5,5 +5,5 @@ or dont
 i dont really care
 how to use it
 compile spdr.c
-you did it
+make a dir in /opt/ called spider 
 well done
