@@ -15,13 +15,25 @@ int main(int argc, char *argv[]){ //very small int main woo hoo!
         } else if (strcmp(argv[1], "remove") == 0){
         check_for_error(argv[2]);
         delete_file(argv[2]);
-    } else if (strcmp(argv[1], "update") == 0) {
+    } else if (strcmp(argv[1], "update") == 0){
         if (argv[2] != NULL){ //check whether it wants everything or not
             check_for_error(argv[2]);
             update_one_thing(argv[2]);
-        }else{
+        } else{
             scan_dir(); //holy hell this is freakin sweet lois! it updates!
         }
+    } else if (strcmp(argv[1], "list") == 0){
+        list_pack();
+        //we dont need to check for argv2 because it doesn't really matter
+        //like its not used here.
+    } else if (strcmp(argv[1], "info") == 0){
+        check_for_error(argv[2]);
+        pack_info(argv[2]);
+    } else if (strcmp(argv[1], "search") == 0){
+        check_for_error(argv[2]);
+        search_for_pack(argv[2]);
+    } else if (strcmp(argv[1], "help") == 0){
+        help_panel(); 
     } else {
         printf("Invalid command/argument\n"); //checks whether the argument is a phony! a big, fat phony!
         //hey! everyone! the user is a phony! a big stinking fat phony!
