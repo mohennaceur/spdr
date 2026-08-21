@@ -1,35 +1,21 @@
+
+ //man i hate easyjet. yk they dont give you charging on the flight? nor power banks? ridiculous how am i
+//supposed to charge my stuff
+//):<
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <dirent.h>
-#include <time.h>
-#include <unistd.h> //man i hate easyjet. yk they dont give you charging on the flight? nor power banks? ridiculous how am i
-//supposed to charge my stuff
-//):<
+#include <unistd.h>
 #ifndef SPDR_H
 #define SPDR_H
-//people infront of me on the plane are chowing down on some food
-//luckily for me tho, i've got starbursts and they dont. HA!
-void timer_inator(int trigger){
-    int msec = 0;
-    clock_t before = clock();
-    printf("please dont hurt me :3\n");
-    printf("placeholder\n");
-    while (msec < trigger) { //if a variable is set to 1 then this loop ends
-        clock_t difference = clock() - before;
-        msec = difference * 1000 / CLOCKS_PER_SEC;
-        printf("\033[1A\033[2K");
-        printf("time taken so far %d seconds\n", msec/1000);
-        fflush(stdout);
-    }
-}
 void run_cmd(char cmd_argument[300]){
-    pid_t pid = fork(); //fork so it doesn't suicide
+    pid_t pid = fork(); //fork so it works
     if (pid < 0){
         perror("Fork()");
-        exit(EXIT_FAILURE);
+        exit(EXIT_FAILURE); //exit( ]: )
     } else if (pid == 0){
     char contain_arg[300];
     strcpy(contain_arg, cmd_argument);
@@ -45,7 +31,6 @@ void run_cmd(char cmd_argument[300]){
        token = strtok(NULL, " \t\n"); //turns it into array
     }
     array_of_arg[i] = NULL; // must kil arracy
-    //use this!!!! snprintf is actually useful!! woo! party!!
     execvp(array_of_arg[0], array_of_arg);
     perror("execvp");
     exit(EXIT_FAILURE);
@@ -67,17 +52,55 @@ void check_for_error(char *argument){ //the reason we use check-for-error is bec
         exit(1);
     }
 }
+void check_for_404(char package[200]){
+    char cmd[200];
+    //this is called checking for 404 because curl gets the data from websites
+    //try to curl a 404 page and you're gonna get much more data than an intended file
+    //the info files are around 10 bytes and these are 300k+
+    //and no, you cannot check whether the curl fails because github always sends you to a 404 screen
+    //which means it will always return a success
+    chdir("/tmp/"); //wrapping them all in / ever since the incident.
+    //also can chdir fail? i doubt it when it has sudo powers
+    snprintf(cmd, sizeof(cmd), "sudo curl -L -o info https://github.com/mohennaceur/spdr-repo/raw/refs/heads/main/%s/info", package);
+    run_cmd(cmd);
+    FILE *file = fopen("/tmp/info", "r");
+    if (file == NULL){
+        perror("file");
+        exit(EXIT_FAILURE);
+    }
+    fseek(file, 0, SEEK_END);
+    long size = ftell(file); //thank you stack overflow
+    if (size > 5000) { //if its bigger than that then its def not a normal file
+        //its 404!!!
+        printf("The install failed ): this means the package doesn't exist.\n"); //oh my god they killed the package!
+        snprintf(cmd, sizeof(cmd), "sudo rm /tmp/info"); //hacky? yes. working? i think
+        run_cmd(cmd);
+        fclose(file);
+        exit(EXIT_FAILURE);
+    }
+    fclose(file);
+    snprintf(cmd, sizeof(cmd), "sudo rm /tmp/info"); //hacky? yes. working? i think
+    run_cmd(cmd);
+    printf("this package (%s) exists!", package);
+}
 void installfile(char chosen_file[100]){
+    char *path = "/opt/spdr/";  // directory to inspect
+    DIR *dir = opendir(path);
+    if (dir == NULL) {
+        printf("creating /opt/spdr/...\n");
+        system("sudo mkdir /opt/spdr/"); //babyproofing go go go!!
+    }
     char cmd[300];
+    check_for_404(chosen_file); //babyproof? this is eggproof
     //we did it! we destroyed the repo! no file deletion needed
     printf("Installing stuff...\n");//, argv[2]
     chdir("/tmp/spdr-repo/");
     //welcome to run_cmd hell
     snprintf(cmd, sizeof(cmd), "curl -L -o %s.tar.gz https://github.com/mohennaceur/spdr-repo/raw/refs/heads/main/%s/%s.tar.gz", chosen_file, chosen_file, chosen_file);
-    run_cmd(cmd);
+    run_cmd(cmd); //verbose is pretty (:
     snprintf(cmd, sizeof(cmd), "tar -xf %s.tar.gz -C /opt/spdr", chosen_file);
     run_cmd(cmd);
-    printf("moving actual files...\n");
+    printf("making it executable...\n");
     snprintf(cmd, sizeof(cmd), "chmod +x /opt/spdr/%s/%s", chosen_file, chosen_file);
     run_cmd(cmd);
     printf("\nmaking executable in /bin/\n");
@@ -102,9 +125,8 @@ void installfile(char chosen_file[100]){
 }
  void delete_file(char chosen_file[50]) {
     char cmd[300];
-    char code_for_system[70];
     printf("Deleting file...\n");
-    chdir("/opt/spdr");
+    chdir("/opt/spdr/"); //wrap EVERYTHING in slashes incase of emergency
     snprintf(cmd, sizeof(cmd), "sudo rm -rf %s", chosen_file);
     run_cmd(cmd);
     chdir("/bin/");
@@ -144,10 +166,11 @@ void update_one_thing(char argument[60]){
     } else {
         printf("this package (%s) isn't outdated! isn't that awesome!\n", argument);
     }
-    system("sudo rm /tmp/info");
+    system("sudo rm /tmp/info"); //having this here isn't awful or evil. it functions quickly.
+    //there is no benefit nor disbenefit to using execvl instead of this
 }
 void scan_dir(){
-    chdir("/opt/spdr");
+    chdir("/opt/spdr"); //this safety net is pretty freakin sweet
     char *path = "/opt/spdr/";  // directory to inspect
     DIR *dir = opendir(path);
     if (dir == NULL) {
@@ -169,6 +192,7 @@ void scan_dir(){
             update_one_thing(entry->d_name);
         }
     }
+    closedir(dir);
 }
 void list_pack() {
     chdir("/opt/spdr");
@@ -192,6 +216,7 @@ void list_pack() {
             printf("you have %s\n", entry->d_name);
         }
     }
+    closedir(dir);
 }
 void pack_info(char package[200]){
     char cmd[100];
@@ -209,30 +234,12 @@ void pack_info(char package[200]){
     printf("this package exists, can be ran by typing the word %s in the terminal\n", package);
     printf("the version number is %s. spdr worked! be happy!\n", fil_inf_str);
 }
-void search_for_pack(char package[200]){
-    char cmd[200];
-    chdir("/tmp/"); //wrapping them all in / ever since the incident.
-    snprintf(cmd, sizeof(cmd), "sudo curl -L -o info https://github.com/mohennaceur/spdr-repo/raw/refs/heads/main/%s/info", package);
-    run_cmd(cmd);
-    FILE *file = fopen("/tmp/info", "r");
-    fseek(file, 0, SEEK_END); long size = ftell(file); //thank you stack overflow
-    if (size > 5000) { //if its bigger than that then its def not a normal file
-        //its 404!!!
-        printf("The install failed ): this means the package no exist.\n"); //oh my god they killed the package!
-        snprintf(cmd, sizeof(cmd), "sudo rm /tmp/info"); //hacky? yes. working? i think
-        run_cmd(cmd);
-        exit(EXIT_FAILURE);
-    }
-    printf("if you're seeing this, the package exists! woohoo\n");
-    fclose(file);
-    snprintf(cmd, sizeof(cmd), "sudo rm /tmp/info"); //hacky? yes. working? i think
-    run_cmd(cmd);
-}
+
 void help_panel(){
     printf("hello! thanks for choosing spdr!\n");
     printf("i mean it is a proof of concept package manager and has only 2 actually useful packages\n");
     printf("but you know what they say, one mans learning project is another mans package manager\n");
-    printf("the commands are:\nhelp - you just ran it\ninstall - install a package\nsearch - check whether a package exists\nlist - check what packages you have\nremove - guess what it does\nupdate - updates. you can specify a package after typing it. \nagain, thank you for choosing spdr\n");
+    printf("the commands are:\ninfo - check info about a installed package\nhelp - you just ran it\ninstall - install a package\nsearch - check whether a package exists\nlist - check what packages you have\nremove - removes a package\nupdate - updates. you can specify a package after typing it. \nagain, thank you for choosing spdr\n");
 } //longest line ever
 #endif //did you guys ever read what if? such a good book
 ////what if every rain drop was replaced with a full grown man
