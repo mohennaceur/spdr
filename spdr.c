@@ -1,16 +1,17 @@
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/types.h>
-#include <sys/wait.h>
-#include <dirent.h>
-#include <unistd.h>
-#include "spdr-func.c" //boo hoo! i didn't use a .h file! it broke ):
+
+#include "spdr.h"
 //sudo ./spdr install textmite
 //now that a lot of stuff is done, time to upload to github and work on rollbacking
 int main(int argc, char *argv[]){ //very small int main woo hoo!
     check_for_error(argv[1]); //
+    char *path = "/opt/spdr/";  // directory to inspect
+    DIR *dir = opendir(path);
+    if (dir == NULL) {
+        printf("creating /opt/spdr/ (you didn't have one /: )...\n");
+        mkdir("/opt/spdr", 0755); //gnu once again destroyed
+
+    }
     if (strcmp(argv[1], "list") == 0){
         list_pack();
         exit(EXIT_SUCCESS); //look lois im using exit_success
