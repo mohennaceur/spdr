@@ -85,26 +85,32 @@ void check_for_404(char *package){
     remove("/tmp/info"); //i depend on the C library. off with gnu's head!
     printf("this package (%s) exists!\n", package);
 }
-void verify_inst(char *chosen_file){
+void pack_info(char *package){
     char cmd[cmd_size];
-    chdir("/bin/"); //enters bin
-    FILE *file = fopen(chosen_file, "r"); //opens file and checks whether its there
+    chdir("/bin/");
+    FILE *file = fopen(package, "r");
     if (file == NULL){
-        printf("this package(%s) which is in /bin/ was misinstalled and is missing!!!\n", chosen_file);
+        printf("We couldn't open /bin/%s ):\n", package);
+        printf("this means that either the package doesn't exist OR it misdownloaded\n");
+        printf("cant really tell\n");
     } else {
-        printf("this package (%s) in /bin/ is alive!!\n", chosen_file);
-    }
-    fclose(file);
-    sprintf(cmd, "/opt/spdr/%s/", chosen_file);
-    chdir(cmd);
-    file = fopen(chosen_file, "r");
-    if (file == NULL){
-        printf("this package(%s) which is in /opt/spdr/%s/ was misinstalled and is missing!!!\n", chosen_file, chosen_file);
-    } else {
-        printf("this package (%s) in /opt/spdr/%s/ is alive!!\n", chosen_file, chosen_file);
         fclose(file);
     }
+    sprintf(cmd, "/opt/spdr/%s/info", package); //why the hell does it need /opt/ and not opt
+    file = fopen(cmd, "r"); //keepign it this way for the custom output message
+    if (file == NULL){
+        printf("We couldn't open the file in /opt/spdr/%s/info ):\n", package);
+        printf("this means that either the package doesn't exist OR it misdownloaded\n");
+        printf("cant really tell\n");
+        exit(EXIT_FAILURE);
+    }
+    char fil_inf_str[101]; //always leave one for the null indicator!
+    fgets(fil_inf_str, 100, file); //reads the file. i go 100 as its fun, gives me energy, and a great way to stay in shape
+    fclose(file); 
+    printf("this package exists, can be ran by typing the word %s in the terminal\n", package);
+    printf("the version number is %sspdr worked! be happy!\n", fil_inf_str);
 }
+
 void check_for_prev_inst(char *package, int installing){
     char cmd[cmd_size];
     sprintf(cmd, "/opt/spdr/%s/%s", package, package);
@@ -125,9 +131,6 @@ void check_for_prev_inst(char *package, int installing){
 }
 void installfile(char *chosen_file){
     char cmd[cmd_size];
-    check_pkg_size(chosen_file);
-    check_for_prev_inst(chosen_file, 1);
-    check_for_404(chosen_file); //babyproof? this is eggproof
     //we did it! we destroyed the repo! no file deletion needed
     printf("Installing stuff...\n");//, argv[2]
     chdir("/tmp/spdr-repo/");
@@ -139,7 +142,7 @@ void installfile(char *chosen_file){
     printf("making it executable...\n");
     sprintf(cmd, "/opt/spdr/%s/%s", chosen_file, chosen_file);
     chmod(cmd, 0755); //thank you stack overflow
-    printf("\nmaking executable in /bin/\n");
+    printf("making executable in /bin/\n");
     chdir("/bin/");
     FILE *file = open_file(chosen_file, 0); //what was past me thinking this code is awful :sob:
     fprintf(file, "#!/bin/sh\nexec /opt/spdr/%s/%s \"$@\"\n#this was made by Mohammed Ennaceur's spdr tool! Thanks for using me!\n#although if you're here most likely something went wrong.\n#sorry?",chosen_file,chosen_file);
@@ -149,14 +152,12 @@ void installfile(char *chosen_file){
     sprintf(cmd, "/bin/%s", chosen_file);
     chmod(cmd, 0755); //thank you stack overflow++
     //leaving runcmd hell
-    verify_inst(chosen_file);
+    pack_info(chosen_file);
     printf("package (%s) installed (check error messages)\n", chosen_file);
     
 }
  void delete_file(char *chosen_file){
     char cmd[cmd_size];
-    check_pkg_size(chosen_file);
-    check_for_prev_inst(chosen_file, 0);
     printf("Deleting file...\n");
     chdir("/opt/spdr/"); //wrap EVERYTHING in slashes incase of emergency
     sprintf(cmd, "sudo rm -rf %s", chosen_file); //you know what. you stay. i like you.
@@ -167,7 +168,6 @@ void installfile(char *chosen_file){
 }
 
 void update_one_thing(char *argument){
-    check_pkg_size(argument);
     char cmd[cmd_size];
     sprintf(cmd, "/opt/spdr/%s/info", argument); //why the hell does it need /opt/ and not opt
     FILE *file = open_file(cmd, 1);//fopen(cmd, "r");
@@ -241,23 +241,6 @@ void list_pack() {
         }
     }
     closedir(dir);
-}
-void pack_info(char *package){
-    char cmd[cmd_size];
-    check_pkg_size(package);
-    sprintf(cmd, "/opt/spdr/%s/info", package); //why the hell does it need /opt/ and not opt
-    FILE *file = fopen(cmd, "r"); //keepign it this way for the custom output message
-    if (file == NULL){
-        printf("We couldn't open the file in /opt/spdr/%s/info ):\n", package);
-        printf("this means that either the package doesn't exist OR it misdownloaded\n");
-        printf("cant really tell\n");
-        exit(EXIT_FAILURE);
-    }
-    char fil_inf_str[101]; //always leave one for the null indicator!
-    fgets(fil_inf_str, 100, file);
-    fclose(file); 
-    printf("this package exists, can be ran by typing the word %s in the terminal\n", package);
-    printf("the version number is %s. spdr worked! be happy!\n", fil_inf_str);
 }
 
 void help_panel(){

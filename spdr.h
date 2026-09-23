@@ -14,7 +14,6 @@ void check_for_error(void *argument);
 void check_pkg_size(char *pkg);
 FILE *open_file(char filename[], int file_type);
 void check_for_404(char *package);
-void verify_inst(char *chosen_file);
 void check_for_prev_inst(char *package, int installing);
 void installfile(char *chosen_file);
 void delete_file(char *chosen_file);
